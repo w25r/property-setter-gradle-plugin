@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.codehaus.groovy.runtime.InvokerHelper;
+import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.ExtensionAware;
@@ -20,70 +21,95 @@ public class PropertySetterPlugin implements Plugin<Project> {
     
     protected final Map<String, String> propertiesToSet = new HashMap<String, String>();
 
-    public void apply(Project targetProject) {
+    protected Project targetProject;
+
+    public void apply(Project target) {
+
+        this.targetProject = target;
+
         Map<String, ?> properties = targetProject.getProperties();
         for (String key : properties.keySet()) {
             if (key.startsWith(PROPERTY_PREFIX)) {
                 System.out.println("key=" + key);
                 String value = properties.get(key).toString();
                 System.out.println("value=" + value);
-                propertiesToSet.put(key, value);
+                String scrubbedKey = key.substring(PROPERTY_PREFIX.length() + 1);
+                propertiesToSet.put(scrubbedKey, value);
             }
         }
-        setProperties(targetProject);
+        System.out.println(propertiesToSet);
+
+        //set now for any extensions that already exist
+        setProperties();
+        
+        //also set after project evaluation
+        target.afterEvaluate(new Action<Project>() {
+            public void execute(Project project) {
+                // TODO: add an extension property that disables this feature?
+                setProperties();
+            }
+        });
     }
 
-    protected void setProperties(Project targetProject) {
+    protected void setProperties() {
         Set<Entry<String, String>> entrySet = propertiesToSet.entrySet();
         for (Iterator<Entry<String, String>> iterator = entrySet.iterator(); iterator.hasNext();) {
             Entry<String, String> entry = iterator.next();
-            if (setProperty(targetProject, entry.getKey(), entry.getValue())) {
+            if (setProperty(targetProject, entry.getKey().replace(PROPERTY_PREFIX + ".", ""), entry.getValue())) {
                 iterator.remove();
             }
         }
     }
 
     protected boolean setProperty(ExtensionAware parent, String key, String value) {
-        String[] expandedProperties = key.split("\\.");
-        for (String propertyName : expandedProperties) {
-            // needs to remove the psp.
-            // needs to remove the current property and pass only the rest
-            // Arrays.copyOfRange(expandedProperties, 1, 1);
-            System.out.println(propertyName);
-            if (PROPERTY_PREFIX.equals(propertyName)) {
-                continue;
-            }
 
-            Object property = null;
-            try {
-                property = InvokerHelper.getProperty(parent, propertyName);
-            }
-            catch (MissingPropertyException e) {
-                continue;
-            }
+        String substring = key.substring(key.indexOf(".") + 1);
+        System.out.println(substring);
+        String[] expandedProperties = key.split("\\.", 2);
+        String propertyName = expandedProperties[0];
+        System.out.println(propertyName);
 
-            System.out.println("Property exists at " + propertyName + " with current value " + property);
-            if (property instanceof ExtensionAware) {
-                // This is a nested property container
-                System.out.println("Extension aware!");
-                return setProperty((ExtensionAware) property, key, value);
-            }
+        Object property = null;
+        try {
+            property = InvokerHelper.getProperty(parent, propertyName);
+        }
+        catch (MissingPropertyException e) {
+            return false;
+        }
 
-            // let's set the property!
-            System.out.println("Setting the property to " + value);
-            try {
-                InvokerHelper.invokeMethod(parent, propertyName, value);
-                return true;
-            }
-            catch (MissingMethodException e) {
-                // worth a try, right?
-            }
+            // boolean isExtension = false;
+            // if (property == null) {
+            // // check to see if it's an extension
+            // try {
+            // property = parent.getExtensions().getByName(propertyName);
+            // isExtension = true;
+            // }
+            // catch (UnknownDomainObjectException e) {
+            // // not an extension, a normal property that can be set
+            // }
+            // }
 
-            InvokerHelper.setProperty(parent, propertyName, value);
+        System.out.println("Property exists at " + propertyName + " with current value " + property);
+        if (property instanceof ExtensionAware) {
+            // This is a nested property container
+            System.out.println("Extension aware!");
+            return setProperty((ExtensionAware) property, expandedProperties[1], value);
+        }
 
+        // let's set the property!
+        System.out.println("Setting the property to " + value);
+        try {
+            InvokerHelper.invokeMethod(parent, propertyName, value);
             return true;
         }
-        return false;
+        catch (MissingMethodException e) {
+            // worth a try, right?
+        }
+        InvokerHelper.setProperty(parent, propertyName, value);
+
+        return true;
+
     }
+
 
 }
