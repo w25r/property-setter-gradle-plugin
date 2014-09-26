@@ -1,0 +1,47 @@
+apply plugin: 'eclipse'
+apply plugin: 'groovy'
+apply plugin: 'jacoco'
+
+defaultTasks 'clean', 'build', 'jacoco', 'sampleCodeCoverageReport'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile gradleApi()
+    compile localGroovy()
+}
+
+group = 'com.github.skazzyy.gradle.plugins'
+version = '0.1.0'
+
+targetCompatibility = '1.7'
+sourceCompatibility = '1.7'
+
+jacoco {
+    //this new version is Java 8 compatible
+    toolVersion = "0.7.0.201403182114"
+}
+
+task testSampleJava(type: JavaExec) {
+    description 'Validates the sample.build.gradle as a JavaExec task for code coverage generation'
+    classpath file('gradle/wrapper/gradle-wrapper.jar')
+    main 'org.gradle.wrapper.GradleWrapperMain'
+    dependsOn assemble
+    args '-b'
+    args 'sample.build.gradle'
+
+    args '-Ppsp.echo.executable=echo'
+    args '-Ppsp.echo.args=Hello World!'   
+}
+check.dependsOn testSampleJava
+
+jacoco {
+    applyTo testSampleJava
+}
+
+task sampleCodeCoverageReport(type:JacocoReport){
+    executionData testSampleJava
+    sourceSets sourceSets.main
+}

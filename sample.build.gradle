@@ -1,0 +1,22 @@
+description 'This is a sample gradle script that uses this plugin'
+
+buildscript {
+    repositories {
+        flatDir {
+            dirs 'build/libs'
+        }
+    }
+
+    dependencies {
+        classpath 'com.github.skazzyy.gradle.plugins:property-setter-gradle-plugin:+'
+    }
+}
+
+
+defaultTasks 'echo'
+
+task echo(type: Exec) {
+    //commandLine will be passed as a property
+}
+
+apply plugin: 'property-setter'
