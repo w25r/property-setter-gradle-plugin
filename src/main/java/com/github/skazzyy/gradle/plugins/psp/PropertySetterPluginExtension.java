@@ -9,7 +9,7 @@ public class PropertySetterPluginExtension {
     }
 
     /**
-     * 
+     * Attempts to set any properties that are needed
      */
     public void setProperties() {
         plugin.setProperties();

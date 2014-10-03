@@ -44,11 +44,28 @@ public class PropertySetterPluginTest {
         project.getPlugins().apply(PropertySetterPlugin.class);
         // when the extension is created after applying the plugin
         project.getExtensions().create("basic", Extension.class);
+        Assert.assertEquals(null, project.getExtensions().getByType(Extension.class).property);
         project.evaluate();
         // then when the project is evaluated, the property will get set
         Assert.assertEquals(VALUE, project.getExtensions().getByType(Extension.class).property);
     }
 
+    @Test
+    public void shouldRunAgainWhenCalled() {
+        final String VALUE = "value";
+        // given the property is passed and the plugin is applied
+        project.getExtensions().add("psp.basic.property", VALUE);
+        project.getPlugins().apply(PropertySetterPlugin.class);
+
+        // when the extension is created after applying the plugin
+        project.getExtensions().create("basic", Extension.class);
+
+        // then when the project is evaluated, the property will get set
+        Assert.assertEquals(null, project.getExtensions().getByType(Extension.class).property);
+        PropertySetterPluginExtension extension = project.getExtensions().getByType(PropertySetterPluginExtension.class);
+        extension.setProperties();
+        Assert.assertEquals(VALUE, project.getExtensions().getByType(Extension.class).property);
+    }
 
     @Test
     public void shouldSetComplexProperty() {

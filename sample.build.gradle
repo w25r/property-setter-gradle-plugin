@@ -12,17 +12,10 @@ buildscript {
     }
 }
 
+apply plugin: 'property-setter'
 
 defaultTasks 'echo'
-/*
-ext.parent {
-    child {
-        myProperty = 'Initial value'
-    }
-}
-*/
+
 task echo(type: Exec) {
     //commandLine will be passed as a property
 }
-
-apply plugin: 'property-setter'

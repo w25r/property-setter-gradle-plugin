@@ -1,8 +1,22 @@
+description 'These tasks make up the automated pipeline for the property-setter-gradle-plugin'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    
+    dependencies {
+        classpath 'com.github.skazzyy.gradle.plugins:sources-gradle-plugin:0.1.0'
+    }
+}
+
 apply plugin: 'eclipse'
 apply plugin: 'groovy'
 apply plugin: 'jacoco'
+apply plugin: 'sources'
 
 defaultTasks 'clean', 'build', 'jacoco', 'sampleCodeCoverageReport'
+
 
 repositories {
     mavenCentral()

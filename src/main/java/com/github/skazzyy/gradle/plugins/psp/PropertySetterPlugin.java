@@ -13,31 +13,34 @@ import org.codehaus.groovy.runtime.InvokerHelper;
 import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.ExtensionAware;
 
 public class PropertySetterPlugin implements Plugin<Project> {
 
     public final static String PROPERTY_PREFIX = "psp";
+    public final static String EXTENSION_NAME = "propertySetter";
     
     protected final Map<String, String> propertiesToSet = new HashMap<String, String>();
 
     protected Project targetProject;
+    protected Logger logger;
 
     public void apply(Project target) {
 
         this.targetProject = target;
+        this.logger = target.getLogger();
+        target.getExtensions().create(EXTENSION_NAME, PropertySetterPluginExtension.class, this);
 
         Map<String, ?> properties = targetProject.getProperties();
         for (String key : properties.keySet()) {
             if (key.startsWith(PROPERTY_PREFIX)) {
-                System.out.println("key=" + key);
                 String value = properties.get(key).toString();
-                System.out.println("value=" + value);
+                logger.debug("Adding key-value pair: key={} value={}", key, value);
                 String scrubbedKey = key.substring(PROPERTY_PREFIX.length() + 1);
                 propertiesToSet.put(scrubbedKey, value);
             }
         }
-        System.out.println(propertiesToSet);
 
         //set now for any extensions that already exist
         setProperties();
@@ -63,8 +66,8 @@ public class PropertySetterPlugin implements Plugin<Project> {
 
     protected boolean setProperty(ExtensionAware parent, String key, String value) {
 
-        String substring = key.substring(key.indexOf(".") + 1);
-        System.out.println(substring);
+        // String substring = key.substring(key.indexOf(".") + 1);
+        // System.out.println(substring);
         String[] expandedProperties = key.split("\\.", 2);
         String propertyName = expandedProperties[0];
         System.out.println(propertyName);
@@ -74,6 +77,7 @@ public class PropertySetterPlugin implements Plugin<Project> {
             property = InvokerHelper.getProperty(parent, propertyName);
         }
         catch (MissingPropertyException e) {
+            logger.debug("The property {} was not found on {}", propertyName, parent);
             return false;
         }
 
