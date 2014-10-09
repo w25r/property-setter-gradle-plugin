@@ -56,6 +56,8 @@ public class PropertySetterPlugin implements Plugin<Project> {
 
     protected void setProperties() {
         Set<Entry<String, String>> entrySet = propertiesToSet.entrySet();
+        logger.debug("Attempting to set the following properties {}", entrySet);
+
         for (Iterator<Entry<String, String>> iterator = entrySet.iterator(); iterator.hasNext();) {
             Entry<String, String> entry = iterator.next();
             if (setProperty(targetProject, entry.getKey().replace(PROPERTY_PREFIX + ".", ""), entry.getValue())) {
@@ -66,11 +68,8 @@ public class PropertySetterPlugin implements Plugin<Project> {
 
     protected boolean setProperty(ExtensionAware parent, String key, String value) {
 
-        // String substring = key.substring(key.indexOf(".") + 1);
-        // System.out.println(substring);
         String[] expandedProperties = key.split("\\.", 2);
         String propertyName = expandedProperties[0];
-        System.out.println(propertyName);
 
         Object property = null;
         try {
@@ -81,27 +80,14 @@ public class PropertySetterPlugin implements Plugin<Project> {
             return false;
         }
 
-            // boolean isExtension = false;
-            // if (property == null) {
-            // // check to see if it's an extension
-            // try {
-            // property = parent.getExtensions().getByName(propertyName);
-            // isExtension = true;
-            // }
-            // catch (UnknownDomainObjectException e) {
-            // // not an extension, a normal property that can be set
-            // }
-            // }
-
-        System.out.println("Property exists at " + propertyName + " with current value " + property);
+        logger.debug("Found property {} with current value {}", propertyName, property);
         if (property instanceof ExtensionAware) {
             // This is a nested property container
-            System.out.println("Extension aware!");
             return setProperty((ExtensionAware) property, expandedProperties[1], value);
         }
 
         // let's set the property!
-        System.out.println("Setting the property to " + value);
+        logger.info("Setting property {} to {}", propertyName, value);
         try {
             InvokerHelper.invokeMethod(parent, propertyName, value);
             return true;
